@@ -120,7 +120,7 @@
 </template>
 
 <script>
-  import {getAdoptList,delInteractiveById,selectShare} from '@/api/interactive'
+  import {getAdoptList,selectShare} from '@/api/interactive'
 
   export default {
     data() {

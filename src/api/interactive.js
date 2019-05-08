@@ -11,6 +11,28 @@ export function getAdoptList(page, rows) {
   })
 }
 
+export function findAllExamine(page, rows) {
+  return request({
+    url: '/examine/findAllExamine',
+    method: 'post',
+    data: {
+      page: page,
+      rows: rows
+    }
+  })
+}
+
+export function findAllStore(page, rows) {
+  return request({
+    url: '/store/findAllStore',
+    method: 'post',
+    data: {
+      page: page,
+      rows: rows
+    }
+  })
+}
+
 export function getFailList(page, rows) {
   return request({
     url: '/Interactive/selectAllInteractiveAsAuditFailure',
@@ -33,12 +55,12 @@ export function getAdoptDetail(interactiveId) {
   })
 }
 
-export  function delInteractiveById(interactiveId) {
+export  function delStoreById(storeId) {
   return request({
-    url: '/Interactive/delInteractiveById',
+    url: '/store/delStoreById',
     method: 'post',
     data: {
-      interactiveId: interactiveId
+      storeId: storeId
     }
   })
 }
@@ -53,7 +75,13 @@ export  function queryAllUserInfo(page,rows) {
     }
   })
 }
-
+export function excelforDownload() {
+  return request({
+    url: '/report/excelDownload',
+    method: 'get',
+    responseType: 'blob'
+  })
+}
 export  function selectShare(shareUserid,shareToUserid,shareObjectId,shareObjectType) {
   return request({
     url: '/ShareCms/selectShare',
@@ -66,4 +94,33 @@ export  function selectShare(shareUserid,shareToUserid,shareObjectId,shareObject
     }
   })
 }
-
+// 导入用户excel文件
+export function withImport(s) {
+  return request({
+    url: '/report/loadExcel',
+    method: 'post',
+    data: {
+      para: s
+    }
+  })
+}
+// 导入审核excel文件
+export function withImportExamine(s) {
+  return request({
+    url: '/examine/loadExcel',
+    method: 'post',
+    data: {
+      para: s
+    }
+  })
+}
+// 导入门店excel文件
+export function withImportStore(s) {
+  return request({
+    url: '/store/loadExcel',
+    method: 'post',
+    data: {
+      para: s
+    }
+  })
+}

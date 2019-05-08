@@ -71,7 +71,7 @@ export function queryOrderInfo(page, rows) {
 
 export function excelforDownload() {
   return request({
-    url: '/CustomArtWorkOrder/excelDownload',
+    url: '/report/excelDownload',
     method: 'get',
     responseType: 'blob'
   })

@@ -58,6 +58,17 @@
               }
             ]
           },
+          {
+            icon: 'el-icon-setting',
+            index: 'store',
+            title: '门店管理',
+            subs: [
+              {
+                index: 'storeMain',
+                title: '门店列表'
+              }
+            ]
+          },
           // {
           //   icon: 'el-icon-menu',
           //   index: 'realName',

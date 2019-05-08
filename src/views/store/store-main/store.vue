@@ -1,15 +1,15 @@
 <template>
   <div class="app-container">
+    <!--<div class="filter-container">-->
+<!--&lt;!&ndash;      <el-button class="filter-item" type="primary" icon="el-icon-download"-->
+      <!--&gt;导出excle-->
+      <!--</el-button>&ndash;&gt;-->
+    <!--</div>-->
     <div class="filter-container">
-      <!--<el-button class="filter-item" type="primary" icon="el-icon-download"-->
-                 <!--@click='excelforDownload'>导出excel-->
-      <!--</el-button>-->
-
       <el-button class="filter-item" type="primary" icon="el-icon-download"
-                 @click.prevent="getExcel">导出excel
+                 @click='getExcel'>导出excle
       </el-button>
       <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">
-
     </div>
     <el-table
       v-loading="listLoading"
@@ -19,57 +19,51 @@
       fit
       highlight-current-row
       style="width: 100%;">
-      <el-table-column align="center" label="ID" width="150">
+      <el-table-column align="center" label="门店ID" width="120">
         <template slot-scope="scope">
-          {{ scope.row.reportId }}
+          {{ scope.row.storeId }}
         </template>
       </el-table-column>
-      <el-table-column align="center" label="手机" width="160">
+      <el-table-column align="center" label="省份" width="100">
         <template slot-scope="scope">
-          <!--<span><img :src="scope.row.reportPhone"></span>-->
-          <span>{{ scope.row.reportPhone }}</span>
+          <span>{{ scope.row.storeProvince }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="名称" width="160">
+      <el-table-column align="center" label="城市" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportName }}</span>
+          <span>{{ scope.row.storeCity }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="邮箱" width="160">
+      <el-table-column align="center" label="区域" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportMailbox }}</span>
+          <span>{{ scope.row.storeRegion }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="支付宝账号" width="160">
+      <el-table-column align="center" label="经销商简称" width="130">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportAlipay }}</span>
+          <span>{{ scope.row.storeDistributorJc }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="试驾意向" width="110">
+      <el-table-column align="center" label="经销商全称" width="170">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportTestDrive==1?"是":"否" }}</span>
+          <span>{{ scope.row.storeDistributorQc }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="更新时间" width="110">
+      <el-table-column align="center" label="电话" width="130">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportUpdateTime }}</span>
+          <span>{{ scope.row.storePhone }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="创建时间" width="110">
+      <el-table-column align="center" label="地址" width="130">
         <template slot-scope="scope">
-          <span>{{ scope.row.reportCreateTime }}</span>
+          <span>{{ scope.row.storeAddress }}</span>
         </template>
       </el-table-column>
-      <!--<el-table-column header-cell-style="background-color:red" align="center" label="审核状态" width="110">
-        <template slot-scope="scope">
-          <span>{{ scope.row.examine ==1?'已审核':'未审核'}}</span>
-        </template>
-      </el-table-column>-->
       <el-table-column align="center" class-name="status-col" label="操作">
         <template slot-scope="scope">
-          <!--<el-button size="small"
-             @click="handleDel(scope.row)" type="danger">刪除
-          </el-button>-->
+          <el-button size="small"
+                     @click="handleDel(scope.row.storeId)" type="danger">刪除
+          </el-button>
           <router-link :to="'/userDetail?userId='+scope.row.id">
             <el-button size="small" type="success">详情</el-button>
           </router-link>
@@ -87,8 +81,8 @@
 </template>
 
 <script>
-  import {getAdoptList,queryAllUserInfo,excelforDownload,withImport} from '@/api/interactive'
-  // import {excelforDownload} from '@/api/customArtwork'
+  import {findAllStore,withImportStore,delStoreById} from '@/api/interactive'
+
   export default {
     data() {
       return {
@@ -96,9 +90,12 @@
         rows: 10, //每页显示行数
         total: null,
         list: null,  //数据列表
-        user: { reportId: 1, reportPhone: 0, reportName: '',
-          reportMailbox: '', reportAlipay: '', reportTestDrive: 0,
-          reportUpdateTime: '', reportCreateTime: ''}, // 单个对象
+        listLoading: false, //刷新加载框
+        dialogStatus: '',//头部按钮跟踪
+        dialogFormVisible: false, //表单是否展示
+        examine: { storeId: 1, storeProvince: '', storeCity: '',storeRegion: '',
+                   storeDistributorJc:'', storeDistributorQc: '',
+                   storePhone: '',storeAddress: ''}, // 单个对象
         listLoading: false, //刷新加载框
         dialogStatus: '',//头部按钮跟踪
         dialogFormVisible: false, //表单是否展示
@@ -108,26 +105,37 @@
       this.fetchData();
     },
     methods: {
-      excelforDownload(){//导出excel
-        excelforDownload().then(res=>{
-          console.log(res)
+      fetchData() {//页面初始化加载数据
+        console.log("fetchData:"  )
+        let self = this;
+        self.listLoading = true
+        findAllStore(self.page, self.rows).then(response => {
+          console.log(response);
+          if (response.status == 200) {
+            self.listLoading = false;
+            self.list = response.data;
+          } else if (response.status == 400) {
+            self.listLoading = false;
+            self.list = null;
+          }
         })
       },
+      //导出excel
       getExcel(){
         require.ensure([], () => {
           // 引入方法,路径为绝对路径
           const { export_json_to_excel } = require('../../../excel/Export2Excel')
           // 标题
-          const tHeader = ['ID', '手机', '名称', '邮箱', '支付宝账号', '试驾意向', '更新时间', '创建时间', '验证码', '审核状态']
+          const tHeader = ['门店ID', '省份', '城市', '区域', '经销商简称', '经销商全称', '电话', '地址']
           // 字段名称
-          const filterVal = ['reportId', 'reportPhone', 'reportName', 'reportMailbox', 'reportAlipay',
-            'reportTestDrive', 'reportUpdateTime', 'reportCreateTime', 'reportYzm', 'reportStatus']
+          const filterVal = ['storeId', 'storeProvince', 'storeCity', 'storeRegion',
+            'storeDistributorJc','storeDistributorQc', 'storePhone', 'storeAddress']
           // 将状态数字改为汉字
           const list = this.updateList(this.list)
           // 数据处理
           const data = this.formatJson(filterVal, list)
           // 执行导出方法
-          export_json_to_excel(tHeader, data, '用户信息')
+          export_json_to_excel(tHeader, data, '门店信息')
         })
       },
       // 数据处理
@@ -135,40 +143,32 @@
         return jsonData.map(v => filterVal.map(j => v[j]))
       },
       // 将状态转为汉字(在data中新增了一个user对象)
-      updateList(list) {
+      /*updateList(list) {
         for (var i = 0; i < list.length; i++) {
           this.user = list[i]
-          if (this.user.reportStatus === 1) {
-            this.user.reportStatus = '已审核'
+          if (this.user.paymentState === 1) {
+            this.user.paymentState = '已支付'
           } else {
-            this.user.reportStatus = '未审核'
+            this.user.paymentState = '未支付'
+          }
+          // 赋值回去
+          list[i] = this.user
+        }
+        for (var i = 0; i < list.length; i++) {
+          this.user = list[i]
+          if (this.user.examineState === 1) {
+            this.user.examineState = '已审核'
+          } else {
+            this.user.examineState = '未审核'
           }
           // 赋值回去
           list[i] = this.user
         }
         // 返回
         return list
-      },
-      fetchData() {//页面初始化加载数据
-        console.log("fetchData:"  )
-        let self = this;
-        self.listLoading = true
-        queryAllUserInfo(self.page, self.rows).then(response => {
-          console.log(response);
-          if (response.status == 200) {
-            self.listLoading = false;
-            self.list = response.data;
-            self.list[0].examine =1;
-            self.list[1].examine = 2;
-          } else if (response.status == 400) {
-            self.listLoading = false;
-            self.list = null;
-          }
-        })
-      },
-      // 导入excel
-
+      },*/
       importf(obj) {
+        console.log("123")
         const _this = this
         const inputDOM = this.$refs.inputer
         // 通过DOM取文件数据
@@ -205,17 +205,17 @@
             const arr = []
             this.da.map(v => {
               const obj = {}
-              obj.reportId = v.ID
-              obj.reportPhone = v.手机
-              obj.reportName = v.名称
-              obj.reportMailbox = v.邮箱
-              obj.reportAlipay = v.支付宝账号
-              obj.reportUpdateTime = v.更新时间
-              obj.reportCreateTime = v.创建时间
-              obj.reportTestDrive = v.试驾意向 === '是' ? 1 : 0
-              obj.reportStatus = v.审核状态 === '已审核' ? 1 : 0
-              this.user = obj
-              arr.push(this.user)
+              // obj.storeId = v.门店ID
+              obj.storeProvince = v.省份
+              obj.storeCity = v.城市
+              obj.storeRegion = v.区域
+              obj.storeDistributorJc = v.经销商简称
+              obj.storeDistributorQc = v.经销商全称
+              obj.storePhone = v.电话
+              obj.storeAddress = v.地址
+              this.examine = obj
+              arr.push(this.examine)
+              console.log(this.examine)
             })
             console.log(arr)
 
@@ -226,7 +226,7 @@
             // }
 
             console.log('数据:' + s)
-            withImport(s).then(res => {
+            withImportStore(s).then(res => {
               console.log(res)
               if (res.status === 200) {
                 // 重载页面
@@ -247,6 +247,7 @@
           reader.readAsBinaryString(f)
         }
       },
+
       handleSizeChange(val) {
         this.rows = val
         this.fetchData()
@@ -255,22 +256,30 @@
         this.page = val
         this.fetchData()
       },
-      handleDel(rows){//删除某个在售艺术品
-        console.log(rows);
-        delInteractiveById(rows.interactiveId).then(response => {
-          console.log(response);
-          if (response.status == 200) {
-            this.fetchData();
-            this.$notify({
-              title: '成功',
-              message: response.data,
-              type: 'success',
-              duration: 2000
-            })
-          }
+      handleDel(storeId){//删除某个门店
+        this.$confirm("此操作将会删除该数据，是否继续？","提示",{
+          confirmButtonText:"确定",
+          cancelButtonText:"取消",
+          type:"warning"
+        }).then(res =>{
+          delStoreById(storeId).then(response => {
+            console.log(response);
+            if (response.status == 200) {
+              this.fetchData();
+              this.$notify({
+                title: '成功',
+                message: response.data,
+                type: 'success',
+                duration: 2000
+              })
+            }
+          })
+        }).catch(error =>{
+          console.log("error")
+          console.log(error)
         })
-      },
 
+      },
 
     }
   }

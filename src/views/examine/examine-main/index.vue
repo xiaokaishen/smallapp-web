@@ -1,9 +1,15 @@
 <template>
   <div class="app-container">
+    <!--<div class="filter-container">-->
+<!--&lt;!&ndash;      <el-button class="filter-item" type="primary" icon="el-icon-download"-->
+      <!--&gt;导出excle-->
+      <!--</el-button>&ndash;&gt;-->
+    <!--</div>-->
     <div class="filter-container">
-<!--      <el-button class="filter-item" type="primary" icon="el-icon-download"
-      >导出excle
-      </el-button>-->
+      <el-button class="filter-item" type="primary" icon="el-icon-download"
+                 @click='getExcel'>导出excle
+      </el-button>
+      <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">
     </div>
     <el-table
       v-loading="listLoading"
@@ -13,50 +19,54 @@
       fit
       highlight-current-row
       style="width: 100%;">
-      <el-table-column align="center" label="审核ID" width="160">
+      <el-table-column align="center" label="审核ID" width="100">
         <template slot-scope="scope">
-          {{ scope.row.id }}
+          {{ scope.row.examineId }}
         </template>
       </el-table-column>
-      <el-table-column align="center" label="优惠券验证码" width="160">
+      <el-table-column align="center" label="审核门店" width="150">
         <template slot-scope="scope">
-          <!--<span><img :src="scope.row.reportPhone"></span>-->
-          <span>{{ scope.row.code }}</span>
+          <span>{{ scope.row.examineStoreName }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="审核门店" width="160">
+      <el-table-column align="center" label="审核用户id" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.auditingStores }}</span>
+          <span>{{ scope.row.examineUserId }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="审核用户id" width="110">
+      <el-table-column align="center" label="用户名称" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.auditingUserId }}</span>
+          <span>{{ scope.row.examineUserName }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="用户名称" width="110">
+      <el-table-column align="center" label="用户手机号码" width="130">
         <template slot-scope="scope">
-          <span>{{ scope.row.userName }}</span>
+          <span>{{ scope.row.examineUserPhone }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="用户手机号码" width="110">
+      <el-table-column align="center" label="用户支付宝" width="130">
         <template slot-scope="scope">
-          <span>{{ scope.row.userPhone }}</span>
+          <span>{{ scope.row.examineUserAlipay }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="用户支付宝" width="110">
+      <el-table-column align="center" label="创建时间" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.userAlipay }}</span>
+          <span>{{ scope.row.examineEstablishTime }}</span>
         </template>
       </el-table-column>
-      <!--<el-table-column align="center" label="创建时间" width="110">-->
-        <!--<template slot-scope="scope">-->
-          <!--<span>{{ scope.row.reportCreateTime }}</span>-->
-        <!--</template>-->
-      <!--</el-table-column>-->
-      <el-table-column header-cell-style="background-color:red" align="center" label="审核状态" width="110">
+      <el-table-column align="center" label="修改时间" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.examine ==1?'已审核':'未审核'}}</span>
+          <span>{{ scope.row.examineModifyTime }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column header-cell-style="background-color:red" align="center" label="审核状态" width="100">
+        <template slot-scope="scope">
+          <span>{{ scope.row.examineState == 1?'已审核':'未审核'}}</span>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="支付情况" width="100">
+        <template slot-scope="scope">
+          <span>{{scope.row.paymentState == 1?'已支付':'未支付'}}</span>
         </template>
       </el-table-column>
       <el-table-column align="center" class-name="status-col" label="操作">
@@ -81,7 +91,7 @@
 </template>
 
 <script>
-  import {getAdoptList,delInteractiveById,queryAllUserInfo} from '@/api/interactive'
+  import {findAllExamine,withImportExamine} from '@/api/interactive'
 
   export default {
     data() {
@@ -90,6 +100,12 @@
         rows: 10, //每页显示行数
         total: null,
         list: null,  //数据列表
+        listLoading: false, //刷新加载框
+        dialogStatus: '',//头部按钮跟踪
+        dialogFormVisible: false, //表单是否展示
+        examine: { examineId: 1, examineStoreName: '', examineUserId: 0,
+          examineUserName: '',examineUserPhone:'', examineUserAlipay: '', examineEstablishTime: '',
+          examineModifyTime: '', examineState: 0, paymentState: 0}, // 单个对象
         listLoading: false, //刷新加载框
         dialogStatus: '',//头部按钮跟踪
         dialogFormVisible: false, //表单是否展示
@@ -102,29 +118,141 @@
       fetchData() {//页面初始化加载数据
         console.log("fetchData:"  )
         let self = this;
-        // self.listLoading = true
-        let list = [
-          {id:1,code:12345,auditingStores:'4s店1',
-            auditingUserId:11,userName:'斯柯达',
-            userPhone:12345678911,userAlipay:17456123781},
-          {id:2,code:45678,auditingStores:'4s店2',
-            auditingUserId:22,userName:'万斯达',
-            userPhone:12765438911,userAlipay:17445612281}
-        ]
-        self.list = list;
-        // queryAllUserInfo(self.page, self.rows).then(response => {
-        //   console.log(response);
-        //   if (response.status == 200) {
-        //     self.listLoading = false;
-        //     self.list = response.data;
-        //     self.list[0].examine =1;
-        //     self.list[1].examine = 2;
-        //   } else if (response.status == 400) {
-        //     self.listLoading = false;
-        //     self.list = null;
-        //   }
-        // })
+        self.listLoading = true
+        findAllExamine(self.page, self.rows).then(response => {
+          console.log(response);
+          if (response.status == 200) {
+            self.listLoading = false;
+            self.list = response.data;
+          } else if (response.status == 400) {
+            self.listLoading = false;
+            self.list = null;
+          }
+        })
       },
+      //导出excel
+      getExcel(){
+        require.ensure([], () => {
+          // 引入方法,路径为绝对路径
+          const { export_json_to_excel } = require('../../../excel/Export2Excel')
+          // 标题
+          const tHeader = ['审核ID', '审核门店', '审核用户ID', '用户名称', '用户手机号码', '用户支付宝', '创建时间', '修改时间', '审核状态', '支付情况']
+          // 字段名称
+          const filterVal = ['examineId', 'examineStoreName', 'examineUserId', 'examineUserName', 'examineUserPhone',
+            'examineUserAlipay', 'examineEstablishTime', 'examineModifyTime', 'examineState', 'paymentState']
+          // 将状态数字改为汉字
+          const list = this.updateList(this.list)
+          // 数据处理
+          const data = this.formatJson(filterVal, list)
+          // 执行导出方法
+          export_json_to_excel(tHeader, data, '审核信息')
+        })
+      },
+      // 数据处理
+      formatJson(filterVal, jsonData) {
+        return jsonData.map(v => filterVal.map(j => v[j]))
+      },
+      // 将状态转为汉字(在data中新增了一个user对象)
+      updateList(list) {
+        for (var i = 0; i < list.length; i++) {
+          this.user = list[i]
+          if (this.user.paymentState === 1) {
+            this.user.paymentState = '已支付'
+          } else {
+            this.user.paymentState = '未支付'
+          }
+          if (this.user.examineState === 1) {
+            this.user.examineState = '已审核'
+          } else {
+            this.user.examineState = '未审核'
+          }
+          // 赋值回去
+          list[i] = this.user
+        }
+        // 返回
+        return list
+      },
+      importf(obj) {
+        const _this = this
+        const inputDOM = this.$refs.inputer
+        // 通过DOM取文件数据
+        this.file = event.currentTarget.files[0]
+        var rABS = false // 是否将文件读取为二进制字符串
+        var f = this.file
+        var reader = new FileReader()
+        // if (!FileReader.prototype.readAsBinaryString) {
+        FileReader.prototype.readAsBinaryString = function(f) {
+          var binary = ''
+          var rABS = false // 是否将文件读取为二进制字符串
+          var pt = this
+          var wb // 读取完成的数据
+          var outdata
+          var reader = new FileReader()
+          reader.onload = function(e) {
+            var bytes = new Uint8Array(reader.result)
+            var length = bytes.byteLength
+            for (var i = 0; i < length; i++) {
+              binary += String.fromCharCode(bytes[i])
+            }
+            var XLSX = require('xlsx')
+            // if (rABS) {
+            //   wb = XLSX.read(btoa(fixdata(binary)), { // 手动转化
+            //     type: 'base64'
+            //   })
+            // } else {
+            wb = XLSX.read(binary, {
+              type: 'binary'
+            })
+            // }
+            outdata = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])// outdata就是你想要的东西
+            this.da = [...outdata]
+            const arr = []
+            this.da.map(v => {
+              const obj = {}
+              obj.examineId = v.审核ID
+              obj.examineStoreName = v.审核门店
+              obj.examineUserId = v.审核用户ID
+              obj.examineUserName = v.用户名称
+              obj.examineUserPhone = v.用户手机号码
+              obj.examineUserAlipay = v.用户支付宝
+              obj.examineEstablishTime = v.创建时间
+              obj.examineModifyTime = v.修改时间
+              obj.examineState = v.审核状态 === '已审核' ? 1 : 0
+              obj.paymentState = v.支付情况 === '已支付' ? 1 : 0
+              this.examine = obj
+              arr.push(this.examine)
+            })
+            console.log(arr)
+
+            var s = JSON.stringify(arr)
+            // const para = {
+            //   // withList: JSON.stringify(this.da)
+            //   withList: arr
+            // }
+
+            console.log('数据:' + s)
+            withImportExamine(s).then(res => {
+              console.log(res)
+              if (res.status === 200) {
+                // 重载页面
+                window.location.reload()
+              } else {
+                _this.$message({
+                  message: '导入失败',
+                  type: 'error'
+                })
+              }
+            })
+          }
+          reader.readAsArrayBuffer(f)
+        }
+        if (rABS) {
+          reader.readAsArrayBuffer(f)
+        } else {
+          reader.readAsBinaryString(f)
+        }
+      },
+
       handleSizeChange(val) {
         this.rows = val
         this.fetchData()
@@ -148,8 +276,6 @@
           }
         })
       },
-
-
     }
   }
 </script>

@@ -204,7 +204,16 @@ const router = new Router({
             path: '/examineMain',
             component: resolve => require(['@/views/examine/examine-main/index'], resolve),
             meta: {
-              title: '用户列表',
+              title: '审核列表',
+              keepAlive: true // 需要被缓存
+            }
+          },
+          {
+            name: 'storeMain',
+            path: '/storeMain',
+            component: resolve => require(['@/views/store/store-main/store'], resolve),
+            meta: {
+              title: '审核列表',
               keepAlive: true // 需要被缓存
             }
           },
