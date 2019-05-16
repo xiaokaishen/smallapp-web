@@ -33,16 +33,36 @@ export function findAllStore(page, rows) {
   })
 }
 
-export function getFailList(page, rows) {
+/**
+ * 修改审核状态
+ * @param examineId
+ */
+export function examineYorNbyId(examineId,examineState) {
   return request({
-    url: '/Interactive/selectAllInteractiveAsAuditFailure',
+    url: '/examine/examineYorNbyId',
     method: 'post',
     data: {
-      page: page,
-      rows: rows
+      examineId: examineId,
+      examineState:examineState
     }
   })
 }
+
+/**
+ * 修改支付情况
+ * @param examineId
+ */
+export function paymentYorNbyId(examineId,examineState) {
+  return request({
+    url: '/examine/paymentYorNbyId',
+    method: 'post',
+    data: {
+      examineId: examineId,
+      examineState:examineState
+    }
+  })
+}
+
 
 
 export function getAdoptDetail(interactiveId) {
@@ -122,5 +142,13 @@ export function withImportStore(s) {
     data: {
       para: s
     }
+  })
+}
+//获得二维码
+export function getE(id) {
+  return request({
+    url: '/store/getE',
+    method: 'post',
+    data: { id: id }
   })
 }

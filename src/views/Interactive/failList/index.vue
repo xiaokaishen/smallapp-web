@@ -73,7 +73,7 @@
 </template>
 
 <script>
-  import {getFailList} from '@/api/interactive'
+  // import {getFailList} from '@/api/interactive'
 
   export default {
     data() {

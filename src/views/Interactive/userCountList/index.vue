@@ -1,14 +1,19 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <!--<el-button class="filter-item" type="primary" icon="el-icon-download"-->
-                 <!--@click='excelforDownload'>导出excel-->
-      <!--</el-button>-->
+      <el-button
+        class="filter-item"
+        type="primary"
+        icon="el-icon-upload"
+        @click.prevent="openBrowse">导入excel
+      </el-button>
+      <!--<input type="button" name="button" value="浏览" @click="openBrowse">-->
+      <input id="uploadExcel" type="file" style="display: none" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)" >
 
       <el-button class="filter-item" type="primary" icon="el-icon-download"
                  @click.prevent="getExcel">导出excel
       </el-button>
-      <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">
+      <!--<input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">-->
 
     </div>
     <el-table
@@ -19,7 +24,7 @@
       fit
       highlight-current-row
       style="width: 100%;">
-      <el-table-column align="center" label="ID" width="150">
+      <el-table-column align="center" label="ID" width="100">
         <template slot-scope="scope">
           {{ scope.row.reportId }}
         </template>
@@ -50,12 +55,12 @@
           <span>{{ scope.row.reportTestDrive==1?"是":"否" }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="更新时间" width="110">
+      <el-table-column align="center" label="更新时间" width="200">
         <template slot-scope="scope">
           <span>{{ scope.row.reportUpdateTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="创建时间" width="110">
+      <el-table-column align="center" label="创建时间" width="200">
         <template slot-scope="scope">
           <span>{{ scope.row.reportCreateTime }}</span>
         </template>
@@ -65,16 +70,16 @@
           <span>{{ scope.row.examine ==1?'已审核':'未审核'}}</span>
         </template>
       </el-table-column>-->
-      <el-table-column align="center" class-name="status-col" label="操作">
-        <template slot-scope="scope">
-          <!--<el-button size="small"
-             @click="handleDel(scope.row)" type="danger">刪除
-          </el-button>-->
-          <router-link :to="'/userDetail?userId='+scope.row.id">
-            <el-button size="small" type="success">详情</el-button>
-          </router-link>
-        </template>
-      </el-table-column>
+      <!--<el-table-column align="center" class-name="status-col" label="操作">-->
+        <!--<template slot-scope="scope">-->
+          <!--&lt;!&ndash;<el-button size="small"-->
+             <!--@click="handleDel(scope.row)" type="danger">刪除-->
+          <!--</el-button>&ndash;&gt;-->
+          <!--<router-link :to="'/userDetail?userId='+scope.row.id">-->
+            <!--<el-button size="small" type="success">详情</el-button>-->
+          <!--</router-link>-->
+        <!--</template>-->
+      <!--</el-table-column>-->
     </el-table>
 
     <div class="pagination-container">
@@ -118,10 +123,10 @@
           // 引入方法,路径为绝对路径
           const { export_json_to_excel } = require('../../../excel/Export2Excel')
           // 标题
-          const tHeader = ['ID', '手机', '名称', '邮箱', '支付宝账号', '试驾意向', '更新时间', '创建时间', '验证码', '审核状态']
+          const tHeader = ['ID', '手机', '名称', '邮箱', '支付宝账号', '试驾意向', '更新时间', '创建时间', '审核状态']
           // 字段名称
           const filterVal = ['reportId', 'reportPhone', 'reportName', 'reportMailbox', 'reportAlipay',
-            'reportTestDrive', 'reportUpdateTime', 'reportCreateTime', 'reportYzm', 'reportStatus']
+            'reportTestDrive', 'reportUpdateTime', 'reportCreateTime', 'reportStatus']
           // 将状态数字改为汉字
           const list = this.updateList(this.list)
           // 数据处理
@@ -167,7 +172,12 @@
         })
       },
       // 导入excel
-
+      openBrowse() {
+        // 获得file的id
+        var f = document.getElementById('uploadExcel')
+        // 触发事件
+        f.click()
+      },
       importf(obj) {
         const _this = this
         const inputDOM = this.$refs.inputer

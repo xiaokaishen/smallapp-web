@@ -6,10 +6,18 @@
       <!--</el-button>&ndash;&gt;-->
     <!--</div>-->
     <div class="filter-container">
+      <el-button
+        class="filter-item"
+        type="primary"
+        icon="el-icon-upload"
+        @click.prevent="openBrowse">导入excel
+      </el-button>
+      <!--<input type="button" name="button" value="浏览" @click="openBrowse">-->
+      <input id="uploadExcel" type="file" style="display: none" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)" >
       <el-button class="filter-item" type="primary" icon="el-icon-download"
                  @click='getExcel'>导出excle
       </el-button>
-      <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">
+      <!--<input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">-->
     </div>
     <el-table
       v-loading="listLoading"
@@ -61,7 +69,10 @@
       </el-table-column>
       <el-table-column header-cell-style="background-color:red" align="center" label="审核状态" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.examineState == 1?'已审核':'未审核'}}</span>
+          <span>{{ scope.row.examineState == 1?'审核通过':scope.row.examineState == 2?'审核未通过':'未审核'}}</span>
+          <!--<span v-if="scope.row.examineState == 0 ">未审核</span>-->
+          <!--<span v-else-if="scope.row.examineState == 1 ">已审核</span>-->
+          <!--<span v-if="scope.row.examineState == 2 ">审核未通过</span>-->
         </template>
       </el-table-column>
       <el-table-column align="center" label="支付情况" width="100">
@@ -69,17 +80,42 @@
           <span>{{scope.row.paymentState == 1?'已支付':'未支付'}}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" class-name="status-col" label="操作">
+      <el-table-column align="center" class-name="status-col" label="操作" width="150">
         <template slot-scope="scope">
-<!--      <el-button size="small"
-                     @click="handleDel(scope.row)" type="danger">刪除
+          <!--<el-button size="small"
+                     @click="examineYorN(scope.row.examineId)"  type="success">审核
           </el-button>-->
-          <router-link :to="'/userDetail?userId='+scope.row.id">
+          <el-button size="small"
+                     @click="havingRealName(scope.row.examineId)"  type="success">审核
+          </el-button>
+          <el-button size="small"
+                     @click="paymentYorN(scope.row)" type="danger">支付
+          </el-button>
+          <!--<router-link :to="'/userDetail?userId='+scope.row.id">
             <el-button size="small" type="success">详情</el-button>
-          </router-link>
+          </router-link>-->
         </template>
       </el-table-column>
     </el-table>
+    <!--这里是审核的Form表单-->
+    <el-dialog title="问卷审核" :visible.sync="havingFormVisible">
+      <el-form ref="dataForm" :rules="rules" :model="submitInfo" label-position="left"
+               label-width="150px"
+               style="width: 600px; margin-left:50px;">
+        <el-form-item label="通过审核" prop="examineState">
+          <el-radio class="radio" v-model="submitInfo.examineState" :label="1">是</el-radio>
+          <el-radio class="radio" v-model="submitInfo.examineState" :label="2">否</el-radio>
+        </el-form-item>
+        <el-form-item v-if="submitInfo.examineState==2" label="未通过审核原因" prop="examineRemark">
+          <el-input v-model="submitInfo.examineRemark"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="havingFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="havingData">提交
+        </el-button>
+      </div>
+    </el-dialog>
 
     <div class="pagination-container">
       <el-pagination :current-page="page" :page-sizes="[10,20,30, 50]" :page-size="rows" :total="total" background
@@ -91,11 +127,20 @@
 </template>
 
 <script>
-  import {findAllExamine,withImportExamine} from '@/api/interactive'
+  import {findAllExamine,withImportExamine,examineYorNbyId,paymentYorNbyId} from '@/api/interactive'
 
   export default {
     data() {
       return {
+        submitInfo: {//审核信息
+          examineId:'',
+          examineState:1,
+          examineRemark:'',
+        },
+        rules: {
+          examineRemark: [{required: true, message: '不通过审核必须填写原因', trigger: 'blur, change'}]
+        },
+        havingFormVisible: false, //审核表单是否展示
         page: 1,  //页数
         rows: 10, //每页显示行数
         total: null,
@@ -171,6 +216,13 @@
         }
         // 返回
         return list
+      },
+      // 导入excel
+      openBrowse() {
+        // 获得file的id
+        var f = document.getElementById('uploadExcel')
+        // 触发事件
+        f.click()
       },
       importf(obj) {
         const _this = this
@@ -261,21 +313,97 @@
         this.page = val
         this.fetchData()
       },
-      handleDel(rows){//删除某个在售艺术品
-        console.log(rows);
-        delInteractiveById(rows.interactiveId).then(response => {
-          console.log(response);
-          if (response.status == 200) {
-            this.fetchData();
-            this.$notify({
-              title: '成功',
-              message: response.data,
-              type: 'success',
-              duration: 2000
+      havingRealName(examineId) {
+        this.submitInfo.examineId = examineId
+        this.havingFormVisible = true
+        this.$nextTick(() => {
+          this.$refs['dataForm'].clearValidate()
+        })
+      },
+      examineYorN(examineId){//更改某个审核状态
+        this.$confirm("您确定要修改该条数据审核状态吗?,是否继续?","提示",{
+          confirmButtonText:"继续",
+          cancelButtonText:"取消",
+          type:"warning"
+        }).then(res =>{
+          examineYorNbyId(examineId).then(res => {
+            if (res.status == 200) {
+              this.fetchData();
+              this.$notify({
+                title: '审核成功',
+                message: res.data,
+                type: 'success',
+                duration: 2000
+              })
+            }
+          })
+        }).catch(error =>{
+          console.log("error")
+          console.log(error)
+        })
+
+      },
+      paymentYorN(examine){//更改某个审核状态
+        console.log(examine);
+        if(examine.examineState == 0 || examine.examineState == 2 ){
+          this.$notify({
+            title: '请先通过审核',
+            type: 'danger',
+            duration: 2000
+          })
+          return false;
+        }
+        this.$confirm("您确定要修改该条数据支付情况吗?,是否继续?","提示",{
+          confirmButtonText:"继续",
+          cancelButtonText:"取消",
+          type:"warning"
+        }).then(res =>{
+          paymentYorNbyId(examine.examineId).then(res => {
+            if (res.status == 200) {
+              this.fetchData();
+              this.$notify({
+                title: '支付成功',
+                message: res.data,
+                type: 'success',
+                duration: 2000
+              })
+            }
+          })
+        }).catch(error =>{
+          console.log("error")
+          console.log(error)
+        })
+
+      },
+      havingData() {//对实名进行审核
+        var self = this;
+        self.$refs['dataForm'].validate((valid) => {
+          if (valid) {
+            console.log("submitInfo:",self.submitInfo)
+            // return false;
+            examineYorNbyId(self.submitInfo.examineId,self.submitInfo.examineState).then(response => {
+              console.log("havingData:",response)
+              if (response.status == 200) {//添加成功
+                let msg = self.submitInfo.examineState ==1?'审核通过':'审核未通过';
+                self.havingFormVisible = false
+                self.submitInfo.examineState = '';//清空temp的值
+                self.submitInfo.examineRemark = '';//清空temp的值
+                self.submitInfo.examineId = '';
+                //调用初始化加载函数
+                self.page = 1;
+                self.fetchData();
+                self.$notify({
+                  title: msg,
+                  message: response.data,
+                  type: 'success',
+                  duration: 2000
+                })
+
+              }
             })
           }
         })
-      },
+      }
     }
   }
 </script>

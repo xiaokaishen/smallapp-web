@@ -6,10 +6,14 @@
       <!--</el-button>&ndash;&gt;-->
     <!--</div>-->
     <div class="filter-container">
-      <el-button class="filter-item" type="primary" icon="el-icon-download"
-                 @click='getExcel'>导出excle
+      <el-button
+        class="filter-item"
+        type="primary"
+        icon="el-icon-upload"
+        @click.prevent="openBrowse">导入excel
       </el-button>
-      <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)">
+      <!--<input type="button" name="button" value="浏览" @click="openBrowse">-->
+      <input id="uploadExcel" type="file" style="display: none" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importf(this)" >
     </div>
     <el-table
       v-loading="listLoading"
@@ -59,17 +63,42 @@
           <span>{{ scope.row.storeAddress }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" class-name="status-col" label="操作">
+      <el-table-column align="center" class-name="status-col" width="200" label="操作">
         <template slot-scope="scope">
           <el-button size="small"
                      @click="handleDel(scope.row.storeId)" type="danger">刪除
           </el-button>
-          <router-link :to="'/userDetail?userId='+scope.row.id">
-            <el-button size="small" type="success">详情</el-button>
-          </router-link>
+          <!--<router-link :to="'/userDetail?userId='+scope.row.id">-->
+            <!--<el-button size="small" type="success">详情</el-button>-->
+          <!--</router-link>-->
+          <el-button size="small" type="success" @click.prevent="getE(scope.row.storeId)">二维码</el-button>
         </template>
       </el-table-column>
+      <!--<el-table-column align="center" class-name="status-col" label="二维码">-->
+        <!--<template slot-scope="scope">-->
+          <!--<el-button size="small" type="success" @click.prevent="getE(scope.row.storeId)">二维码</el-button>-->
+        <!--</template>-->
+      <!--</el-table-column>-->
     </el-table>
+    <!--弹框-start-->
+    <el-dialog
+      :visible.sync="centerDialogVisible"
+      title="--二维码--"
+      width="30%"
+      center>
+      <span slot="footer" class="dialog-footer">
+        <img :src="qrurl">
+        <!--<el-button type="primary">-->
+          <!--上线-->
+          <a :href="downurl">
+            <el-button type="primary">下载二维码</el-button>
+          </a>
+          <!--本地-->
+          <!--<a href="https://www.baidu.com">下载二维码</a>-->
+        <!--</el-button>-->
+      </span>
+    </el-dialog>
+    <!--弹框-end-->
 
     <div class="pagination-container">
       <el-pagination :current-page="page" :page-sizes="[10,20,30, 50]" :page-size="rows" :total="total" background
@@ -81,7 +110,7 @@
 </template>
 
 <script>
-  import {findAllStore,withImportStore,delStoreById} from '@/api/interactive'
+  import {findAllStore,withImportStore,delStoreById,getE} from '@/api/interactive'
 
   export default {
     data() {
@@ -99,6 +128,10 @@
         listLoading: false, //刷新加载框
         dialogStatus: '',//头部按钮跟踪
         dialogFormVisible: false, //表单是否展示
+        qrurl: '', // 二维码地址(目前是默认的)
+        downurl: '', // 下载地址
+        centerDialogVisible: false, // 弹窗状态
+        qrName: ''// 二维码下载名称
       }
     },
     created() {
@@ -167,6 +200,13 @@
         // 返回
         return list
       },*/
+      // 导入excel
+      openBrowse() {
+        // 获得file的id
+        var f = document.getElementById('uploadExcel')
+        // 触发事件
+        f.click()
+      },
       importf(obj) {
         console.log("123")
         const _this = this
@@ -247,7 +287,27 @@
           reader.readAsBinaryString(f)
         }
       },
+      // 获得二维码
+      getE(id) {
+        console.log('id为' + id)
+        getE(id).then(res => {
+          console.log(res)
+          if (res.status === 200) {
+            //上线放开注释
 
+            // 展示路径
+            this.qrurl = res.data.storeViewUrl
+            console.log('res.data.storeViewUrl');
+            console.log(res)
+            // 下载路径
+            this.downurl = res.data.storeDownloadUrl
+            // 二维码名称
+            this.qrName = id
+            // 弹窗状态改变
+            this.centerDialogVisible = true
+          }
+        })
+      },
       handleSizeChange(val) {
         this.rows = val
         this.fetchData()
